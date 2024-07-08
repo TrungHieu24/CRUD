@@ -28,7 +28,6 @@ public class Menu {
     public int getId() {
         return id;
     }
-
     public void setId(int id) {
         this.id = id;
     }
@@ -36,7 +35,6 @@ public class Menu {
     public int getPrice() {
         return Price;
     }
-
     public void setPrice(int Price) {
         this.Price = Price;
     }
@@ -44,7 +42,6 @@ public class Menu {
     public String getName() {
         return Name;
     }
-
     public void setName(String Name) {
         this.Name = Name;
     }
@@ -52,15 +49,16 @@ public class Menu {
     public String getDescription() {
         return Description;
     }
+    public void setDescription(String Description) {
+        this.Description = Description;
+    }
 
     public String getImagePath() {return Image;}
     public void setImage(String Image) {
         this.Image = Image;
     }
 
-    public void setDescription(String Description) {
-        this.Description = Description;
-    }
+
 
     @Override
     public String toString() {

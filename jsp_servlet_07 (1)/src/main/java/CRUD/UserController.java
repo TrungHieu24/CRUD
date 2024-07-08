@@ -2,32 +2,29 @@ package CRUD;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import CRUD.User;
-import CRUD.UserDbUtil;
+import jakarta.servlet.http.Part;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
-
 @WebServlet("/UserController")
-public class UserController extends HttpServlet {
-    private static final long serialVersionUID = 1L;
 
+public class UserController extends HttpServlet{
+    private static final long serialVersionUID = 1L;
     private UserDbUtil userDbUtil;
 
-    @Resource(name = "jdbc/food_store")
+    @Resource(name = "jdbc/restaurant") // adjust the name as per your context.xml or server configuration
     private DataSource dataSource;
 
     @Override
     public void init() throws ServletException {
         super.init();
-
         try {
             userDbUtil = new UserDbUtil(dataSource);
         } catch (Exception exc) {
@@ -38,12 +35,10 @@ public class UserController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
             String theCommand = request.getParameter("command");
-            if (theCommand == null)
+            if (theCommand == null) {
                 theCommand = "list";
+            }
             switch (theCommand) {
-                case "ADD":
-                    addUser(request, response);
-                    break;
                 case "LOAD":
                     loadUser(request, response);
                     break;
@@ -53,8 +48,11 @@ public class UserController extends HttpServlet {
                 case "DELETE":
                     deleteUser(request, response);
                     break;
+                case "ADD":
+                    addUser(request, response);
+                    break;
                 default:
-                    listUser(request, response);
+                    listUsers(request, response);
             }
         } catch (Exception exc) {
             throw new ServletException(exc);
@@ -62,112 +60,81 @@ public class UserController extends HttpServlet {
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String command = request.getParameter("command");
-
-        if (command == null) {
-            command = "LIST";
-        }
-
-        switch (command) {
-            case "ADD":
-                try {
-                    addUser(request, response);
-                } catch (Exception e) {
-                    throw new ServletException(e);
-                }
-                break;
-
-            case "UPDATE":
-                try {
-                    updateUser(request, response);
-                } catch (Exception e) {
-                    throw new ServletException(e);
-                }
-                break;
-            // Other cases...
-
-            default:
-                // Your default action...
-                break;
-        }
+        doGet(request, response); // Redirect POST requests to doGet
     }
 
-    private void deleteUser(HttpServletRequest request, HttpServletResponse response)
-            throws Exception {
-        String theUserId = request.getParameter("userId");
-        userDbUtil.deleteUser(theUserId);
-        listUser(request, response);
+    private void listUsers(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        List<User> users = userDbUtil.getUsers();
+        request.setAttribute("USER_LIST", users);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/list-users.jsp");
+        dispatcher.forward(request, response);
     }
 
-    private void updateUser(HttpServletRequest request, HttpServletResponse response)
-            throws Exception {
+    private void loadUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        int userId = Integer.parseInt(request.getParameter("userId"));
+        User user = userDbUtil.getUser(userId);
+        request.setAttribute("THE_USER", user);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/update-user-form.jsp");
+        dispatcher.forward(request, response);
+    }
+
+    private void updateUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
         int id = Integer.parseInt(request.getParameter("userId"));
-        String name = request.getParameter("FullName");
-        String birthday = request.getParameter("Birthday");
-        String phone = request.getParameter("Phone");
-        String passwords = request.getParameter("Password");
-        String role = request.getParameter("Role");
-        String address = request.getParameter("Address");
+        String fullName = request.getParameter("fullName");
+        String birthday = request.getParameter("birthday");
         String email = request.getParameter("email");
-        String resetToken = request.getParameter("ResetToken");
+        String phone = request.getParameter("phone");
+        String password = request.getParameter("password");
+        String role = request.getParameter("role");
+        String address = request.getParameter("address");
+        String resetToken = request.getParameter("resetToken");
+        String resetTokenExpiry = request.getParameter("resetTokenExpiry");
 
-        User theUser = new User(id, name, birthday, phone, passwords, role, address,email, resetToken);
-        userDbUtil.updateUser(theUser);
-        listUser(request, response);
+        User user = new User(id, fullName, birthday, email, phone, password, role, address, resetToken, resetTokenExpiry);
+        userDbUtil.updateUser(user);
+
+        listUsers(request, response);
     }
 
-    private void loadUser(HttpServletRequest request, HttpServletResponse response)
-            throws Exception {
-
-        // read student id from form data
-        String theUserId = request.getParameter("userId");
-
-        // get student from database (db util)
-        User theUser = userDbUtil.getUser(theUserId);
-
-        // place student in the request attribute
-        request.setAttribute("THE_USER", theUser);
-
-        // send to jsp page: update-student-form.jsp
-        RequestDispatcher dispatcher =
-                request.getRequestDispatcher("/CRUD/update-user-form.jsp");
-        dispatcher.forward(request, response);
+    private void deleteUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        int userId = Integer.parseInt(request.getParameter("userId"));
+        userDbUtil.deleteUser(userId);
+        listUsers(request, response);
     }
 
-    protected void addUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
-
-        String name = request.getParameter("FullName");
-        String birthday = request.getParameter("Birthday");
-        String phone = request.getParameter("Phone");
-        String passwords = request.getParameter("Password");
-        String role = request.getParameter("Role");
-        String address = request.getParameter("Address");
+    private void addUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        String fullName = request.getParameter("fullName");
+        String birthday = request.getParameter("birthday");
         String email = request.getParameter("email");
-        String resetToken = request.getParameter("ResetToken");
+        String phone = request.getParameter("phone");
+        String password = request.getParameter("password");
+        String role = request.getParameter("role");
+        String address = request.getParameter("address");
+        String resetToken = request.getParameter("resetToken");
+        String resetTokenExpiry = request.getParameter("resetTokenExpiry");
 
-        // create a new user object
-        User theUser = new User(name, birthday, phone, passwords, role, address, email, resetToken);
+        User user = new User(fullName, birthday, email, phone, password, role, address, resetToken, resetTokenExpiry);
+        userDbUtil.addUser(user);
 
-        // add the user to the database
-        userDbUtil.addUser(theUser);
-
-        // send back to main page (the user list)
-        listUser(request, response);
+        listUsers(request, response);
+    }
+    private String getFileName(Part part) {
+        String contentDisposition = part.getHeader("content-disposition");
+        for (String token : contentDisposition.split(";")) {
+            if (token.trim().startsWith("filename")) {
+                return token.substring(token.indexOf("=") + 2, token.length() - 1);
+            }
+        }
+        return "";
     }
 
-
-    private void listUser(HttpServletRequest request, HttpServletResponse response)
-            throws Exception {
-
-        // get students from db util
-        List<User> User = userDbUtil.getUser();
-
-        // add students to the request
-        request.setAttribute("USER_LIST", User);
-
-        // send to JSP page (view)
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/CRUD/list-user.jsp");
-        dispatcher.forward(request, response);
+    private String uploadFile(Part part, String fileName, String uploadDirectory) throws IOException {
+        File fileUploadDirectory = new File(uploadDirectory);
+        if (!fileUploadDirectory.exists()) {
+            fileUploadDirectory.mkdirs();
+        }
+        String filePath = uploadDirectory + File.separator + fileName;
+        part.write(filePath);
+        return filePath;
     }
-
 }
