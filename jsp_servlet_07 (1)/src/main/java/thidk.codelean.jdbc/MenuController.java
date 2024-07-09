@@ -112,9 +112,33 @@ public class MenuController extends HttpServlet {
         String name = request.getParameter("Name");
         int price = Integer.parseInt(request.getParameter("Price"));
         String description = request.getParameter("Description");
-        String imagePath = uploadImage(request);
 
-        Menu theMenu = new Menu(id, name, price, description, imagePath);
+        Part filePart = request.getPart("Image");
+        String fileName = getSubmittedFileName(filePart);
+
+        String image = null;
+
+        if (fileName != null && !fileName.isEmpty()) {
+            // Get the real path for webapp/images
+            String uploadDir = getServletContext().getRealPath("/") + "images";
+            File uploadDirFile = new File(uploadDir);
+            if (!uploadDirFile.exists()) {
+                uploadDirFile.mkdirs();
+            }
+
+            String filePath = uploadDir + File.separator + fileName;
+
+            // Save the new file on server
+            filePart.write(filePath);
+
+            // Set the new image file name
+            image = fileName;
+        } else {
+            // If no new image is uploaded, retain the existing image filename
+            image = request.getParameter("existingImage");
+        }
+
+        Menu theMenu = new Menu(id, name, price, description, image );
         menuDbUtil.updateMenu(theMenu);
         listMenu(request, response);
     }
@@ -193,13 +217,13 @@ public class MenuController extends HttpServlet {
     }
 
 
-    private String uploadImage(HttpServletRequest request) throws IOException, ServletException {
-        Part filePart = request.getPart("Image");
-        String fileName = filePart.getSubmittedFileName();
-        String uploadPath = getServletContext().getRealPath("") + File.separator + "uploads";
-        File uploadDir = new File(uploadPath);
-        if (!uploadDir.exists()) uploadDir.mkdir();
-        filePart.write(uploadPath + File.separator + fileName);
-        return "uploads" + File.separator + fileName;
-    }
+//    private String uploadImage(HttpServletRequest request) throws IOException, ServletException {
+//        Part filePart = request.getPart("Image");
+//        String fileName = filePart.getSubmittedFileName();
+//        String uploadPath = getServletContext().getRealPath("") + File.separator + "uploads";
+//        File uploadDir = new File(uploadPath);
+//        if (!uploadDir.exists()) uploadDir.mkdir();
+//        filePart.write(uploadPath + File.separator + fileName);
+//        return "uploads" + File.separator + fileName;
+//    }
 }

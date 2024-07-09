@@ -19,7 +19,7 @@ public class UserController extends HttpServlet{
     private static final long serialVersionUID = 1L;
     private UserDbUtil userDbUtil;
 
-    @Resource(name = "jdbc/restaurant") // adjust the name as per your context.xml or server configuration
+    @Resource(name = "jdbc/food_store") // adjust the name as per your context.xml or server configuration
     private DataSource dataSource;
 
     @Override
@@ -117,24 +117,5 @@ public class UserController extends HttpServlet{
         userDbUtil.addUser(user);
 
         listUsers(request, response);
-    }
-    private String getFileName(Part part) {
-        String contentDisposition = part.getHeader("content-disposition");
-        for (String token : contentDisposition.split(";")) {
-            if (token.trim().startsWith("filename")) {
-                return token.substring(token.indexOf("=") + 2, token.length() - 1);
-            }
-        }
-        return "";
-    }
-
-    private String uploadFile(Part part, String fileName, String uploadDirectory) throws IOException {
-        File fileUploadDirectory = new File(uploadDirectory);
-        if (!fileUploadDirectory.exists()) {
-            fileUploadDirectory.mkdirs();
-        }
-        String filePath = uploadDirectory + File.separator + fileName;
-        part.write(filePath);
-        return filePath;
     }
 }
